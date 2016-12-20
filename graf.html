@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title></title>
+	<link rel="stylesheet" href="">
+	<script src="https://code.jquery.com/jquery.js"></script>
+    <!-- Importo el archivo Javascript de Highcharts directamente desde su servidor -->
+<script src="http://code.highcharts.com/stock/highstock.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+</head>
+<body>
+	<div id="contenedor"></div>
+</body>
+</html>
+
+
+
+<script>
+ 
+chartCPU = new Highcharts.StockChart({
+    chart: {
+        renderTo: 'contenedor'
+        //defaultSeriesType: 'spline'
+ 
+    },
+    rangeSelector : {
+        enabled: false
+    },
+    title: {
+        text: 'Gráfica'
+    },
+    xAxis: {
+        type: 'datetime'
+        //tickPixelInterval: 150,
+        //maxZoom: 20 * 1000
+    },
+    yAxis: {
+        minPadding: 0.2,
+        maxPadding: 0.2,
+        title: {
+            text: 'Valores',
+            margin: 10
+        }
+    },
+    series: [{
+        name: 'Valor',
+        data: (function() {
+                // generate an array of random data
+                var data = [];
+                <?php
+                    for($i = 0 ;$i<count($rawdata);$i++){
+                ?>
+                data.push([<?php echo $timeArray[$i];?>,<?php echo $valoresArray[$i];?>]);
+                <?php } ?>
+                return data;
+            })()
+    }],
+    credits: {
+            enabled: false
+    }
+});
+ 
+</script>
+
+
+
+<?php
+class RandomTable{
+ 
+    public $IDr = 0 ;
+    //Función que crea y devuelve un objeto de conexión a la base de datos y chequea el estado de la misma. 
+    function conectarBD(){ 
+            $server = "localhost";
+            $usuario = "root";
+            $pass = "";
+            $BD = "GeekyTheoryBD";
+            //variable que guarda la conexión de la base de datos
+            $conexion = mysqli_connect($server, $usuario, $pass, $BD); 
+            //Comprobamos si la conexión ha tenido exito
+            if(!$conexion){ 
+               echo 'Ha sucedido un error inexperado en la conexion de la base de datos<br>'; 
+            } 
+            //devolvemos el objeto de conexión para usarlo en las consultas  
+            return $conexion; 
+    }  
+    /*Desconectar la conexion a la base de datos*/
+    function desconectarBD($conexion){
+            //Cierra la conexión y guarda el estado de la operación en una variable
+            $close = mysqli_close($conexion); 
+            //Comprobamos si se ha cerrado la conexión correctamente
+            if(!$close){  
+               echo 'Ha sucedido un error inexperado en la desconexion de la base de datos<br>'; 
+            }    
+            //devuelve el estado del cierre de conexión
+            return $close;         
+    }
+ 
+    //Devuelve un array multidimensional con el resultado de la consulta
+    function getArraySQL($sql){
+        //Creamos la conexión
+        $conexion = $this->conectarBD();
+        //generamos la consulta
+        if(!$result = mysqli_query($conexion, $sql)) die();
+ 
+        $rawdata = array();
+        //guardamos en un array multidimensional todos los datos de la consulta
+        $i=0;
+        while($row = mysqli_fetch_array($result))
+        {   
+            //guardamos en rawdata todos los vectores/filas que nos devuelve la consulta
+            $rawdata[$i] = $row;
+            $i++;
+        }
+        //Cerramos la base de datos
+        $this->desconectarBD($conexion);
+        //devolvemos rawdata
+        return $rawdata;
+    }
+    //inserta en la base de datos un nuevo registro en la tabla usuarios
+    function insertRandom(){
+        //Generamos un número entero aleatorio entre 0 y 100
+        $ran = rand(0, 100);
+        //creamos la conexión
+        $conexion = $this->conectarBD();
+        //Escribimos la sentencia sql necesaria respetando los tipos de datos
+        $sql = "insert into random (valor) 
+        values (".$ran.")";
+        //hacemos la consulta y la comprobamos 
+        $consulta = mysqli_query($conexion,$sql);
+        if(!$consulta){
+            echo "No se ha podido insertar en la base de datos<br><br>".mysqli_error($conexion);
+        }
+        //Desconectamos la base de datos
+        $this->desconectarBD($conexion);
+        //devolvemos el resultado de la consulta (true o false)
+        return $consulta;
+    }
+    function getAllInfo(){
+        //Creamos la consulta
+        $sql = "SELECT * FROM random;";
+        //obtenemos el array con toda la información
+        return $this->getArraySQL($sql);
+    }
+}
+ 
+?>
